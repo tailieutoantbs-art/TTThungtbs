@@ -25,6 +25,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const [apiStatus, setApiStatus] = useState('unconnected');
   const [apiMessage, setApiMessage] = useState('');
+  const [colorTheme, setColorTheme] = useState(() => localStorage.getItem('color_theme') || 'gold');
 
   // Modals & UI State
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -39,7 +40,7 @@ export default function App() {
   const [progressStep, setProgressStep] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
 
-  // Dark Mode side effect
+  // Dark Mode & Color Theme side effects
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -49,6 +50,11 @@ export default function App() {
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
+
+  const handleColorThemeChange = (newTheme) => {
+    setColorTheme(newTheme);
+    localStorage.setItem('color_theme', newTheme);
+  };
 
   // Initial API Key Test & Repo Count
   useEffect(() => {
@@ -318,11 +324,17 @@ export default function App() {
     setActiveTab('problems');
   };
 
-  // Quick Repository Save
+  // Repository Save with Custom Title ("Lưu Với Tên")
   const handleSaveToRepo = async () => {
     if (!problems || problems.length === 0) return;
+    const defaultTitle = `Bộ ${problems.length} Bài Toán ${options.domain || 'Thực Tế'} ${options.grade || ''} (${new Date().toLocaleDateString('vi-VN')})`;
+    const customTitle = window.prompt('Nhập tên đặt cho Bộ Bài Toán này để lưu vào Kho Ngân Hàng:', defaultTitle);
+    
+    if (customTitle === null) return; // Cancelled
+
+    const finalTitle = customTitle.trim() || defaultTitle;
     await saveProblemSetToRepo({
-      title: `Bộ Đề ${options.domain || 'Toán'} ${options.grade || ''} (${new Date().toLocaleDateString('vi-VN')})`,
+      title: finalTitle,
       grade: options.grade,
       domain: options.domain,
       context: options.context,
@@ -331,7 +343,7 @@ export default function App() {
       problems,
       tags: ['#ToanThucTe', `#${options.grade.replace(/\s+/g, '')}`],
     });
-    alert('Đã lưu bộ đề vào Kho Ngân Hàng Bài Toán thành công!');
+    alert(`Đã lưu bộ đề "${finalTitle}" vào Kho Ngân Hàng Bài Toán thành công!`);
     updateRepoCount();
   };
 
@@ -342,10 +354,12 @@ export default function App() {
         apiMessage={apiMessage}
         apiKey={apiKey}
         isDarkMode={isDarkMode}
+        colorTheme={colorTheme}
         repoCount={repoCount}
         onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
         onOpenUserGuide={() => setIsUserGuideOpen(true)}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        onChangeColorTheme={handleColorThemeChange}
         onSaveDraft={handleSaveDraft}
         onRestoreDraft={handleRestoreDraft}
         onDownloadWord={() => exportWordDocument(problems, options, false)}

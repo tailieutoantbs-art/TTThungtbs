@@ -11,7 +11,7 @@ export const NavigationTabs = ({ activeTab, onSelectTab, hasProblems, problemCou
     },
     {
       id: 'problems',
-      label: '10 Bài Toán Thực Tế',
+      label: problemCount > 0 ? `${problemCount} Bài Toán Thực Tế` : 'Bài Toán Thực Tế',
       icon: ListOrdered,
       badge: problemCount > 0 ? problemCount : null,
     },

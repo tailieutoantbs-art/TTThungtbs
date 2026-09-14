@@ -212,11 +212,12 @@ Hãy trả về phản hồi dưới dạng JSON thuần túy (không chứa mã
   }
 });
 
-// 3. Generate 10 Problems Endpoint
+// 3. Generate N Problems Endpoint (Dynamic 1 to 10)
 app.post('/api/gemini/generate-10', async (req, res) => {
   try {
     const { problemText, options, analysis, apiKey, model: modelName = 'gemini-2.5-flash', lockedProblems = [] } = req.body;
     const genAI = getGenAI(apiKey);
+    const problemCount = parseInt(options?.problemCount, 10) || 10;
 
     const lockedMap = (lockedProblems || []).reduce((acc, p) => {
       acc[p.id] = p;
@@ -224,12 +225,13 @@ app.post('/api/gemini/generate-10', async (req, res) => {
     }, {});
 
     const prompt = `Bạn là Chuyên gia Biên soạn Đề thi Toán & Khoa học GDPT 2018. 
-Nhiệm vụ của bạn là dựa vào đề bài toán gốc và các thông tin phân tích để sáng tạo đúng 10 BÀI TOÁN THỰC TẾ TƯƠNG TỰ.
+Nhiệm vụ của bạn là dựa vào đề bài toán gốc và các thông tin phân tích để sáng tạo đúng ${problemCount} BÀI TOÁN THỰC TẾ TƯƠNG TỰ.
 
 --- ĐỀ BÀI GỐC ---
 ${problemText}
 
 --- CẤU HÌNH YÊU CẦU ---
+- Số lượng bài toán cần tạo: Đúng ${problemCount} bài (từ id 1 đến ${problemCount})
 - Lớp: ${options?.grade || 'GDPT'}
 - Phân môn: ${options?.domain || 'Toán học'}
 - Mức độ độ khó: ${options?.difficulty || 'Theo bài gốc'}
@@ -268,7 +270,7 @@ Trả về phản hồi định dạng JSON thuần túy có cấu trúc như sa
 }
 
 LƯU Ý QUAN TRỌNG:
-1. Đủ đúng 10 bài từ id 1 đến 10.
+1. Đủ đúng ${problemCount} bài từ id 1 đến ${problemCount}.
 2. Công thức toán học dùng KaTeX/LaTeX với dấu $...$ cho inline và $$...$$ cho block equation.
 3. BẮT BUỘC: MỖI BÀI TOÁN PHẢI CÓ ĐOẠN MÃ TIKZ THỰC SỰ TRONG TRƯỜNG "tikzCode" (vẽ sơ đồ hình học, biểu đồ, hình vẽ thực tế tương ứng). Sử dụng các màu chuẩn (red, green, blue, yellow, orange, cyan, magenta, gray).
 4. QUAN TRỌNG VỀ JSON: Tất cả dấu gạch chéo ngược (backslash) trong LaTeX và TikZ PHẢI ESCAPE THÀNH \\\\ (ví dụ \\\\begin{tikzpicture}, \\\\frac{a}{b}, \\\\draw).

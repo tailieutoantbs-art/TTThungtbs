@@ -430,6 +430,29 @@ export const InputTab = ({
                   <option value="Phân hóa từ cơ bản đến nâng cao">Phân hóa từ cơ bản đến nâng cao</option>
                 </select>
               </div>
+
+              {/* Số lượng bài toán cần tạo */}
+              <div className="sm:col-span-2">
+                <label className="block font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Số Lượng Bài Toán Cần Tạo (1 đến 10 Bài)
+                </label>
+                <select
+                  value={options.problemCount || 10}
+                  onChange={(e) => handleOptionChange('problemCount', parseInt(e.target.value, 10))}
+                  className="w-full p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-slate-900 dark:text-slate-100 font-bold focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value={1}>01 Bài Toán Thực Tế</option>
+                  <option value={2}>02 Bài Toán Thực Tế</option>
+                  <option value={3}>03 Bài Toán Thực Tế</option>
+                  <option value={4}>04 Bài Toán Thực Tế</option>
+                  <option value={5}>05 Bài Toán Thực Tế</option>
+                  <option value={6}>06 Bài Toán Thực Tế</option>
+                  <option value={7}>07 Bài Toán Thực Tế</option>
+                  <option value={8}>08 Bài Toán Thực Tế</option>
+                  <option value={9}>09 Bài Toán Thực Tế</option>
+                  <option value={10}>10 Bài Toán Thực Tế (Khuyên dùng)</option>
+                </select>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -453,7 +476,7 @@ export const InputTab = ({
               <button
                 onClick={onGenerate10}
                 disabled={isGenerating || isAnalyzing}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white shadow-lg shadow-amber-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isGenerating ? (
                   <>
@@ -461,7 +484,7 @@ export const InputTab = ({
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 fill-current text-amber-300" /> TẠO 10 BÀI TOÁN TƯƠNG TỰ
+                    <Zap className="w-4 h-4 fill-current text-amber-200" /> TẠO {options.problemCount || 10} BÀI TOÁN TƯƠNG TỰ
                   </>
                 )}
               </button>

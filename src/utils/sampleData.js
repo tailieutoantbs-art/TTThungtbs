@@ -36,6 +36,7 @@ export const INITIAL_OPTIONS = {
   context: 'Ngữ cảnh Việt Nam',
   creativeLevel: 'Sáng tạo đa dạng nhưng giữ kiến thức cốt lõi',
   imageStyle: 'Ảnh thực tế giáo dục',
+  problemCount: 10,
 };
 
 export const SAMPLE_10_PROBLEMS = [
