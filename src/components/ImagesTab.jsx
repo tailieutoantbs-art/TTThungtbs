@@ -311,7 +311,9 @@ export const ImagesTab = ({
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white">Câu {idx + 1}</span>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{p.title}</h3>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {p.title ? p.title.replace(/^câu\s*\d+\s*[:\.-]?\s*/i, '').trim() : ''}
+                  </h3>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">

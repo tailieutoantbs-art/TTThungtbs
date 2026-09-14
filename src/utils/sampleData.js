@@ -42,7 +42,7 @@ export const INITIAL_OPTIONS = {
 export const SAMPLE_10_PROBLEMS = [
   {
     id: 1,
-    title: 'Câu 1: Tính kích thước khu vườn trồng hoa chữ nhật',
+    title: 'Tính kích thước khu vườn trồng hoa chữ nhật',
     questionFormat: 'Trắc nghiệm nhiều lựa chọn',
     contextTag: 'Hình học & Nông nghiệp STEM',
     difficulty: 'Vận dụng',
@@ -62,7 +62,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 2,
-    title: 'Câu 2: Thể tích bể nước cứu hỏa khối nón',
+    title: 'Thể tích bể nước cứu hỏa khối nón',
     questionFormat: 'Tự luận ngắn',
     contextTag: 'Hình học không gian & Cứu hỏa STEM',
     difficulty: 'Vận dụng',
@@ -82,7 +82,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 3,
-    title: 'Câu 3: Lãi suất tiết kiệm tích lũy ngân hàng',
+    title: 'Lãi suất tiết kiệm tích lũy ngân hàng',
     questionFormat: 'Trắc nghiệm nhiều lựa chọn',
     contextTag: 'Toán Tài chính & Quản lý chi tiêu',
     difficulty: 'Thông hiểu',
@@ -108,7 +108,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 4,
-    title: 'Câu 4: Quãng đường phanh xe ô tô an toàn',
+    title: 'Quãng đường phanh xe ô tô an toàn',
     questionFormat: 'Trắc nghiệm',
     contextTag: 'Vật lý & Giao thông đường bộ STEM',
     difficulty: 'Vận dụng cao',
@@ -129,7 +129,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 5,
-    title: 'Câu 5: Tối ưu hóa chi phí sản xuất hộp sữa tươi',
+    title: 'Tối ưu hóa chi phí sản xuất hộp sữa tươi',
     questionFormat: 'Tự luận',
     contextTag: 'Công nghiệp Thực phẩm & Hộp giấy 3D',
     difficulty: 'Vận dụng cao',
@@ -150,7 +150,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 6,
-    title: 'Câu 6: Chiều cao cây bóng râm đo bằng lượng giác',
+    title: 'Chiều cao cây bóng râm đo bằng lượng giác',
     questionFormat: 'Trắc nghiệm',
     contextTag: 'Đo đạc Thực địa & Tam giác vuông',
     difficulty: 'Nhận biết',
@@ -172,7 +172,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 7,
-    title: 'Câu 7: Tốc độ tăng trưởng dân số theo hàm mũ',
+    title: 'Tốc độ tăng trưởng dân số theo hàm mũ',
     questionFormat: 'Trắc nghiệm',
     contextTag: 'Thống kê Dân số & Hàm số Mũ',
     difficulty: 'Vận dụng',
@@ -193,7 +193,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 8,
-    title: 'Câu 8: Năng suất thu hoạch lúa vụ hè thu',
+    title: 'Năng suất thu hoạch lúa vụ hè thu',
     questionFormat: 'Trả lời ngắn',
     contextTag: 'Nông nghiệp Thực tế & Đại số 9',
     difficulty: 'Thông hiểu',
@@ -212,7 +212,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 9,
-    title: 'Câu 9: Thiết kế cầu treo dây văng parabol',
+    title: 'Thiết kế cầu treo dây văng parabol',
     questionFormat: 'Tự luận',
     contextTag: 'Công trình Giao thông & Parabol Hướng trục',
     difficulty: 'Vận dụng cao',
@@ -233,7 +233,7 @@ export const SAMPLE_10_PROBLEMS = [
   },
   {
     id: 10,
-    title: 'Câu 10: Tần số xuất hiện biến cố xác suất xúc xắc',
+    title: 'Tần số xuất hiện biến cố xác suất xúc xắc',
     questionFormat: 'Trắc nghiệm',
     contextTag: 'Xác suất & Trò chơi Học tập STEM',
     difficulty: 'Nhận biết',

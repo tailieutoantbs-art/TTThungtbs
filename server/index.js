@@ -312,7 +312,7 @@ Trả về phản hồi định dạng JSON thuần túy có cấu trúc như sa
   "problems": [
     {
       "id": 1,
-      "title": "Câu 1: Tên ngắn gọn bài toán",
+      "title": "Tên ngắn gọn bài toán (không ghi chữ Câu 1:)",
       "questionFormat": "Trắc nghiệm nhiều lựa chọn",
       "contextTag": "Bối cảnh thực tế (Giao thông / STEM / Nông nghiệp...)",
       "difficulty": "Mức độ (Nhận biết / Thông hiểu / Vận dụng...)",

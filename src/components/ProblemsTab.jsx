@@ -68,6 +68,8 @@ export const ProblemsTab = ({
     }
   };
 
+  const formatTitle = (title) => (title ? title.replace(/^câu\s*\d+\s*[:\.-]?\s*/i, '').trim() : '');
+
   return (
     <div className="space-y-6">
       {/* Action Control Bar */}
@@ -79,8 +81,9 @@ export const ProblemsTab = ({
           </span>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Show/Hide Answers Toggle */}
+          {/* Toggle Answer View */}
           <button
             onClick={onToggleShowAnswers}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors"
@@ -89,7 +92,7 @@ export const ProblemsTab = ({
             <span>{showAnswers ? 'Ẩn Đáp Án & Lời Giải' : 'Hiện Đáp Án & Lời Giải'}</span>
           </button>
 
-          {/* Regenerate Unlocked */}
+          {/* Batch Regenerate Unlocked */}
           <button
             onClick={onRegenerateUnlocked}
             disabled={isGenerating}
@@ -135,7 +138,7 @@ export const ProblemsTab = ({
                 <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600 text-white">
                   Câu {idx + 1}
                 </span>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{p.title}</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatTitle(p.title)}</h3>
                 <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   {p.difficulty || 'Vận dụng'}
                 </span>
