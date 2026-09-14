@@ -21,7 +21,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('input');
 
   // API Key & Model State
-  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem('gemini_api_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key') || '');
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const [apiStatus, setApiStatus] = useState('unconnected');
   const [apiMessage, setApiMessage] = useState('');
@@ -83,10 +83,11 @@ export default function App() {
       const data = await res.json();
       if (res.ok && data.success) {
         setApiStatus('connected');
-        setApiMessage(data.message || 'Kết nối Gemini API thành công.');
+        setApiMessage(data.message || 'Kết nối Gemini API thành công (Đã lưu vĩnh viễn trên trình duyệt).');
       } else {
         setApiStatus('error');
-        setApiMessage(data.message || 'Lỗi kết nối Gemini API. Vui lòng kiểm tra lại khóa.');
+        setApiMessage(data.message || 'Lỗi kết nối Gemini API. API Key có thể đã hết hạn hoặc hết ngạch miễn phí.');
+        setIsApiKeyModalOpen(true);
       }
     } catch {
       setApiStatus('error');
@@ -94,16 +95,19 @@ export default function App() {
     }
   };
 
-  const handleSaveApiKey = (key, saveSession) => {
-    setApiKey(key);
-    if (saveSession) {
-      sessionStorage.setItem('gemini_api_key', key);
+  const handleSaveApiKey = (key, saveLocal = true) => {
+    const trimmed = key ? key.trim() : '';
+    setApiKey(trimmed);
+    if (saveLocal) {
+      localStorage.setItem('gemini_api_key', trimmed);
+      sessionStorage.setItem('gemini_api_key', trimmed);
     } else {
+      localStorage.removeItem('gemini_api_key');
       sessionStorage.removeItem('gemini_api_key');
     }
 
-    if (key.trim()) {
-      testApiKey(key);
+    if (trimmed) {
+      testApiKey(trimmed);
     } else {
       setApiStatus('unconnected');
       setApiMessage('');
@@ -112,6 +116,7 @@ export default function App() {
 
   const handleDeleteApiKey = () => {
     setApiKey('');
+    localStorage.removeItem('gemini_api_key');
     sessionStorage.removeItem('gemini_api_key');
     setApiStatus('unconnected');
     setApiMessage('');

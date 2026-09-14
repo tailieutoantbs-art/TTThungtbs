@@ -390,7 +390,7 @@ LƯU Ý:
 // 7. Regenerate Single Educational Image Prompt Endpoint
 app.post('/api/gemini/regenerate-image-prompt', async (req, res) => {
   try {
-    const { statement, title, apiKey, model: modelName = 'gemini-2.5-flash' } = req.body;
+    const { statement, title, customInstruction, apiKey, model: modelName = 'gemini-2.5-flash' } = req.body;
     const genAI = getGenAI(apiKey);
 
     const prompt = `Bạn là Chuyên gia Thiết kế Mỹ thuật Giáo dục & AI Image Prompt.
@@ -398,6 +398,7 @@ Hãy tạo 01 prompt tiếng Anh ngắn gọn, giàu hình ảnh minh họa bố
 
 Tựa bài: ${title || ''}
 Nội dung bài toán: ${statement || ''}
+${customInstruction ? `Yêu cầu chỉnh sửa đặc biệt từ người dùng: ${customInstruction}` : ''}
 
 LƯU Ý: Chỉ trả về duy nhất chuỗi text prompt tiếng Anh (không chứa ký tự LaTeX rác như $, \\frac, \\begin,...).`;
 

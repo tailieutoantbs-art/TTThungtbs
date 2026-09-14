@@ -205,6 +205,9 @@ export const ImagesTab = ({
     }
   };
 
+  const [customInstructions, setCustomInstructions] = useState({});
+  const [selectedEngines, setSelectedEngines] = useState({});
+
   const handleRegeneratePromptAi = async (p) => {
     if (!apiKey) {
       alert('Vui lòng cài đặt Gemini API Key trước khi sử dụng AI.');
@@ -218,6 +221,7 @@ export const ImagesTab = ({
         body: JSON.stringify({
           title: p.title,
           statement: p.statement,
+          customInstruction: customInstructions[p.id] || '',
           apiKey,
           model: selectedImageModel,
         }),
@@ -227,7 +231,8 @@ export const ImagesTab = ({
       if (data.success && data.imagePrompt) {
         onUpdateProblem({ ...p, imagePrompt: data.imagePrompt });
         setImageErrorState((prev) => ({ ...prev, [p.id]: false }));
-        alert(`Đã khởi tạo thành công Prompt ảnh mới cho Câu ${p.id}!`);
+        setImageSeedState((prev) => ({ ...prev, [p.id]: Date.now() }));
+        alert(`Đã khởi tạo thành công Prompt ảnh AI mới cho Câu ${p.id}!`);
       } else {
         alert(data.error || 'Không thể tạo lại Prompt ảnh.');
       }
@@ -288,7 +293,14 @@ export const ImagesTab = ({
           const cleanPrompt = cleanPromptForPollinations(p.imagePrompt);
           const encodedPrompt = encodeURIComponent(cleanPrompt);
           const seed = imageSeedState[p.id] || (idx + 1) * 100;
-          const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=400&nologo=true&seed=${seed}`;
+          const engine = selectedEngines[p.id] || 'pollinations';
+
+          let imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=400&nologo=true&seed=${seed}`;
+          if (engine === 'unsplash') {
+            imageUrl = `https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&h=400&q=80&sig=${seed}`;
+          } else if (engine === 'diagram') {
+            imageUrl = `https://loremflickr.com/600/400/math,geometry,diagram?lock=${seed}`;
+          }
 
           return (
             <div
@@ -418,7 +430,7 @@ export const ImagesTab = ({
                     </div>
                   )}
 
-                  {/* Rendered Image Preview with Error Handling */}
+                  {/* Rendered Image Preview with Error Handling & Custom AI Editor */}
                   <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
                     {!imageErrorState[p.id] ? (
                       <img
@@ -432,7 +444,7 @@ export const ImagesTab = ({
                       <div className="p-4 text-center space-y-2">
                         <AlertCircle className="w-8 h-8 mx-auto text-amber-500" />
                         <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Không thể tải ảnh minh họa trực tiếp</p>
-                        <p className="text-[10px] text-slate-500">Thử bấm "Tải lại" hoặc sao chép prompt để dán vào Midjourney/DALL-E</p>
+                        <p className="text-[10px] text-slate-500">Thử đổi Engine ảnh, bấm "Tải lại", hoặc yêu cầu AI tạo lại ảnh mới bên dưới.</p>
                         <button
                           onClick={() => handleRetryImage(p.id)}
                           className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-colors"
@@ -448,6 +460,44 @@ export const ImagesTab = ({
                         className="px-2 py-1 rounded bg-slate-950/80 backdrop-blur-sm text-[10px] text-white font-medium hover:bg-slate-900 transition-colors flex items-center gap-1"
                       >
                         <Eye className="w-3 h-3" /> Phóng To
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* AI Custom Image Editing & Engine Switcher Panel */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 text-[11px] flex items-center gap-1">
+                        <Wand2 className="w-3.5 h-3.5 text-amber-500" /> Chỉnh Sửa & Tạo Lại Ảnh AI
+                      </span>
+                      <select
+                        value={selectedEngines[p.id] || 'pollinations'}
+                        onChange={(e) => {
+                          setSelectedEngines((prev) => ({ ...prev, [p.id]: e.target.value }));
+                          setImageErrorState((prev) => ({ ...prev, [p.id]: false }));
+                        }}
+                        className="px-2 py-0.5 rounded text-[10px] font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                      >
+                        <option value="pollinations">Pollinations AI Engine</option>
+                        <option value="unsplash">Unsplash Photo Library</option>
+                        <option value="diagram">Educational Diagram</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Yêu cầu sửa ảnh (VD: Đổi sang 3D hoạt hình, thêm màu xanh...)"
+                        value={customInstructions[p.id] || ''}
+                        onChange={(e) => setCustomInstructions((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                        className="flex-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs focus:ring-1 focus:ring-amber-500"
+                      />
+                      <button
+                        onClick={() => handleRegeneratePromptAi(p)}
+                        disabled={loadingAiId === `prompt_${p.id}`}
+                        className="px-3 py-1.5 rounded-lg font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors shrink-0 text-[11px] disabled:opacity-50"
+                      >
+                        Tạo Lại AI
                       </button>
                     </div>
                   </div>

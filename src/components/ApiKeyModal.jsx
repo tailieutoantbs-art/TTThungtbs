@@ -14,13 +14,13 @@ export const ApiKeyModal = ({
   onSelectModel,
 }) => {
   const [keyInput, setKeyInput] = useState(apiKey || '');
-  const [saveInSession, setSaveInSession] = useState(true);
+  const [saveLocal, setSaveLocal] = useState(true);
 
   if (!isOpen) return null;
 
   const handleSave = (e) => {
     e.preventDefault();
-    onSaveApiKey(keyInput, saveInSession);
+    onSaveApiKey(keyInput, saveLocal);
   };
 
   return (
@@ -88,13 +88,13 @@ export const ApiKeyModal = ({
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="saveSession"
-              checked={saveInSession}
-              onChange={(e) => setSaveInSession(e.target.checked)}
+              id="saveLocal"
+              checked={saveLocal}
+              onChange={(e) => setSaveLocal(e.target.checked)}
               className="rounded text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="saveSession" className="text-slate-600 dark:text-slate-400">
-              Lưu trong phiên làm việc hiện tại (SessionStorage)
+            <label htmlFor="saveLocal" className="text-slate-700 dark:text-slate-300 font-medium">
+              Lưu vĩnh viễn trên trình duyệt này (Không cần nhập lại khi tắt/mở lại trang web)
             </label>
           </div>
 
