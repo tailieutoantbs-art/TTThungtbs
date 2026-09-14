@@ -91,7 +91,10 @@ function repairLlmJson(rawText) {
     result += '"';
   }
 
-  result = result.trim().replace(/,\s*$/, '');
+  result = result.replace(/,\s*"[^"]*"\s*:\s*$/g, '');
+  result = result.replace(/\{\s*"[^"]*"\s*:\s*$/g, '{');
+  result = result.replace(/:\s*$/g, ': null');
+  result = result.trim().replace(/,\s*$/g, '');
 
   while (stack.length > 0) {
     const open = stack.pop();
@@ -100,6 +103,58 @@ function repairLlmJson(rawText) {
   }
 
   return result;
+}
+
+function safeParseLlmJson(rawText) {
+  if (!rawText) return null;
+
+  const repaired = repairLlmJson(rawText);
+  try {
+    return JSON.parse(repaired);
+  } catch (err1) {
+    console.warn('First pass repair failed, attempting fallback object recovery:', err1.message);
+  }
+
+  try {
+    let aggressive = repaired;
+    aggressive = aggressive.replace(/,\s*\{[^{}]*$/g, '');
+    if (!aggressive.endsWith('}')) {
+      const lastCloseBracket = aggressive.lastIndexOf('}');
+      if (lastCloseBracket !== -1) {
+        aggressive = aggressive.substring(0, lastCloseBracket + 1);
+        if (!aggressive.endsWith(']}')) aggressive += ']}';
+      }
+    }
+    return JSON.parse(aggressive);
+  } catch (err2) {
+    console.warn('Second pass repair failed:', err2.message);
+  }
+
+  try {
+    const problemRegex = /\{\s*"id"\s*:\s*\d+[\s\S]*?\n\s*\}/g;
+    const matches = rawText.match(problemRegex) || [];
+    const salvagedProblems = [];
+    for (const match of matches) {
+      try {
+        const cleanObjStr = repairLlmJson(match);
+        const obj = JSON.parse(cleanObjStr);
+        if (obj && obj.id && obj.title) {
+          salvagedProblems.push(obj);
+        }
+      } catch {}
+    }
+
+    if (salvagedProblems.length > 0) {
+      return {
+        sourceAnalysis: { topic: 'Toán thực tế', domain: 'Toán', grade: 'GDPT' },
+        problems: salvagedProblems,
+      };
+    }
+  } catch (err3) {
+    console.warn('Third pass regex salvaging failed:', err3.message);
+  }
+
+  return null;
 }
 
 // Generates content with automatic fallback if the requested model returns 404
@@ -116,7 +171,9 @@ async function generateContentWithFallback(genAI, requestedModel, contents, isJs
   let lastError = null;
   for (const modelName of candidates) {
     try {
-      const config = {};
+      const config = {
+        maxOutputTokens: 8192,
+      };
       if (isJson) {
         config.responseMimeType = 'application/json';
       }
@@ -128,9 +185,8 @@ async function generateContentWithFallback(genAI, requestedModel, contents, isJs
       const errMsg = (err && err.message) || '';
       if (errMsg.includes('404') || errMsg.includes('not found') || errMsg.includes('not supported') || errMsg.includes('responseMimeType')) {
         console.warn(`Model "${modelName}" retry fallback: ${errMsg}`);
-        // Retry without responseMimeType if it caused an error
         try {
-          const model = genAI.getGenerativeModel({ model: modelName });
+          const model = genAI.getGenerativeModel({ model: modelName, generationConfig: { maxOutputTokens: 8192 } });
           const result = await model.generateContent(contents);
           return { result, modelName };
         } catch (innerErr) {
@@ -203,8 +259,10 @@ Hãy trả về phản hồi dưới dạng JSON thuần túy (không chứa mã
 }`;
 
     const { result } = await generateContentWithFallback(genAI, modelName, prompt, true);
-    const cleanText = repairLlmJson(result.response.text());
-    const analysis = JSON.parse(cleanText);
+    const analysis = safeParseLlmJson(result.response.text());
+    if (!analysis) {
+      return res.status(500).json({ success: false, error: 'Không thể giải mã dữ liệu JSON từ AI khi phân tích bài toán. Vui lòng thử lại.' });
+    }
     return res.json({ success: true, analysis });
   } catch (error) {
     console.error('Analyze Error:', error);
@@ -277,8 +335,14 @@ LƯU Ý QUAN TRỌNG:
 5. Đối với các bài có id bị khóa ở danh sách trên, giữ nguyên bài cũ.`;
 
     const { result } = await generateContentWithFallback(genAI, modelName, prompt, true);
-    const cleanText = repairLlmJson(result.response.text());
-    const data = JSON.parse(cleanText);
+    const data = safeParseLlmJson(result.response.text());
+
+    if (!data || !data.problems || !Array.isArray(data.problems) || data.problems.length === 0) {
+      return res.status(500).json({
+        success: false,
+        error: 'Phản hồi từ AI bị ngắt đoạn do dữ liệu quá dài. Bạn có thể chọn giảm số lượng bài toán xuống (ví dụ 3-5 bài) hoặc bấm nút Tạo lại.',
+      });
+    }
 
     if (data.problems && Array.isArray(data.problems)) {
       data.problems = data.problems.map((p) => {
@@ -292,7 +356,7 @@ LƯU Ý QUAN TRỌNG:
     return res.json({ success: true, data });
   } catch (error) {
     console.error('Generate 10 Error:', error);
-    return res.status(500).json({ success: false, error: error.message || 'Lỗi khi tạo 10 bài toán tương tự.' });
+    return res.status(500).json({ success: false, error: error.message || 'Lỗi khi tạo danh sách bài toán tương tự.' });
   }
 });
 
@@ -324,8 +388,10 @@ Trả về định dạng JSON thuần túy cho đúng 1 object bài toán:
 }`;
 
     const { result } = await generateContentWithFallback(genAI, modelName, prompt, true);
-    const cleanText = repairLlmJson(result.response.text());
-    const problem = JSON.parse(cleanText);
+    const problem = safeParseLlmJson(result.response.text());
+    if (!problem) {
+      return res.status(500).json({ success: false, error: `Không thể tạo lại câu ${req.body.idToRegenerate} do phản hồi AI bị lỗi định dạng. Vui lòng thử lại.` });
+    }
     return res.json({ success: true, problem });
   } catch (error) {
     console.error('Regenerate One Error:', error);
