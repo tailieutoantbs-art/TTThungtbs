@@ -92,6 +92,57 @@ export const InputTab = ({
     }
   };
 
+  // Clipboard Image Paste Handler (Ctrl + V direct OCR)
+  const handlePasteImage = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type && item.type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        if (!blob) continue;
+
+        if (!apiKey) {
+          alert('Chưa cài đặt Gemini API Key. Vui lòng cài đặt API Key để trích xuất đề từ ảnh dán.');
+          return;
+        }
+
+        setIsOcrLoading(true);
+        try {
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            const base64 = event.target.result;
+            const res = await fetch('/api/gemini/ocr-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                imageBase64: base64,
+                mimeType: blob.type || 'image/png',
+                apiKey: apiKey,
+              }),
+            });
+
+            const data = await res.json();
+            if (data.success && data.extractedText) {
+              onChangeSourceText(data.extractedText);
+              alert('Đã trích xuất thành công đề bài từ ảnh chụp dán trực tiếp (Ctrl + V)!');
+            } else {
+              alert(data.error || 'Không thể trích xuất nội dung từ ảnh dán.');
+            }
+            setIsOcrLoading(false);
+          };
+          reader.readAsDataURL(blob);
+        } catch {
+          alert('Lỗi đọc dữ liệu ảnh từ clipboard.');
+          setIsOcrLoading(false);
+        }
+        break;
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Instructions Banner */}
@@ -106,7 +157,7 @@ export const InputTab = ({
                 Nhập Đề Bài Gốc & Thiết Lập Tùy Chỉnh Sáng Tạo 4.0
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                Nhập văn bản, nạp đề mẫu hoặc trích xuất từ ảnh chụp đề toán bằng Gemini Vision AI.
+                Nhập văn bản, dán trực tiếp ảnh (Ctrl+V) hoặc nạp đề mẫu để Gemini AI trích xuất tự động.
               </p>
             </div>
           </div>
@@ -139,10 +190,21 @@ export const InputTab = ({
         <div className="lg:col-span-7 space-y-4">
           <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" />
-                Đề Bài Toán / Khoa Học Gốc
-              </label>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  Đề Bài Toán / Khoa Học Gốc
+                </label>
+                {sourceProblemText && (
+                  <button
+                    onClick={() => onChangeSourceText('')}
+                    className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors flex items-center gap-1"
+                    title="Xóa nhanh nội dung đề bài cũ"
+                  >
+                    <Trash2 className="w-3 h-3" /> Xóa Nhanh Đề Cũ
+                  </button>
+                )}
+              </div>
 
               {/* Sample Select Box */}
               <div className="flex items-center gap-2">
@@ -161,14 +223,23 @@ export const InputTab = ({
               </div>
             </div>
 
-            {/* Textarea Input */}
-            <textarea
-              value={sourceProblemText}
-              onChange={(e) => onChangeSourceText(e.target.value)}
-              placeholder="Nhập hoặc dán nội dung đề bài toán thực tế gốc vào đây (Ví dụ: Một khu vườn hình chữ nhật có chiều dài hơn chiều rộng 8m. Diện tích khu vườn là 240 m2...)"
-              rows={8}
-              className="w-full p-4 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sans leading-relaxed resize-y"
-            />
+            {/* Textarea Input with Clipboard Image Paste Handler */}
+            <div className="relative">
+              <textarea
+                value={sourceProblemText}
+                onChange={(e) => onChangeSourceText(e.target.value)}
+                onPaste={handlePasteImage}
+                placeholder="Nhập/dán chữ đề bài toán gốc HOẶC DÁN TRỰC TIẾP ẢNH CHỤP ĐỀ (Ctrl + V) vào đây để AI đọc tự động..."
+                rows={8}
+                className="w-full p-4 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-sans leading-relaxed resize-y"
+              />
+              {isOcrLoading && (
+                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm rounded-xl flex items-center justify-center text-white text-xs font-bold gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-blue-400" />
+                  Đang dùng AI đọc & trích xuất văn bản từ ảnh chụp...
+                </div>
+              )}
+            </div>
 
             {/* OCR Vision Upload Dropzone */}
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -178,10 +249,10 @@ export const InputTab = ({
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    Trích xuất đề bài từ Ảnh chụp / File PDF (AI OCR)
+                    Trích xuất đề từ Ảnh chụp / Clipboard (Ctrl + V)
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Tải ảnh sách giáo khoa, trang đề thi để Gemini trích xuất tự động.
+                    Bấm nút tải ảnh HOẶC chụp màn hình rồi bấm <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600 font-mono font-bold">Ctrl + V</code> dán thẳng vào ô khung đề bên trên.
                   </p>
                 </div>
               </div>
