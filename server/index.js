@@ -332,7 +332,8 @@ LƯU Ý QUAN TRỌNG:
 2. Công thức toán học dùng KaTeX/LaTeX với dấu $...$ cho inline và $$...$$ cho block equation.
 3. BẮT BUỘC: MỖI BÀI TOÁN PHẢI CÓ ĐOẠN MÃ TIKZ THỰC SỰ TRONG TRƯỜNG "tikzCode" (vẽ sơ đồ hình học, biểu đồ, hình vẽ thực tế tương ứng). Sử dụng các màu chuẩn (red, green, blue, yellow, orange, cyan, magenta, gray).
 4. QUAN TRỌNG VỀ JSON: Tất cả dấu gạch chéo ngược (backslash) trong LaTeX và TikZ PHẢI ESCAPE THÀNH \\\\ (ví dụ \\\\begin{tikzpicture}, \\\\frac{a}{b}, \\\\draw).
-5. Đối với các bài có id bị khóa ở danh sách trên, giữ nguyên bài cũ.`;
+5. Đối với các bài có id bị khóa ở danh sách trên, giữ nguyên bài cũ.
+6. BẮT BUỘC HOÀN THÀNH ĐỦ ${problemCount} BÀI: Hãy sinh ngắn gọn, súc tích nhưng đầy đủ lời giải và đúng ${problemCount} bài toán. Đoạn mã TikZ vừa đủ 5-10 dòng đơn giản.`;
 
     const { result } = await generateContentWithFallback(genAI, modelName, prompt, true);
     const data = safeParseLlmJson(result.response.text());

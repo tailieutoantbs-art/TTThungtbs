@@ -39,9 +39,9 @@ export const ProblemsTab = ({
         <div className="w-16 h-16 mx-auto rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
           <BookOpen className="w-8 h-8" />
         </div>
-        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Chưa Có Danh Sách 10 Bài Toán</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Chưa Có Danh Sách Bài Toán</h3>
         <p className="text-sm text-slate-500 max-w-md mx-auto">
-          Vui lòng chuyển sang Tab <strong>"Nhập & Cấu Hình Đề"</strong>, nhập bài toán gốc và bấm <strong>"TẠO 10 BÀI TOÁN TƯƠNG TỰ"</strong>.
+          Vui lòng chuyển sang Tab <strong>"Nhập & Cấu Hình Đề"</strong>, nhập bài toán gốc và bấm <strong>"TẠO BÀI TOÁN TƯƠNG TỰ"</strong>.
         </p>
         <button
           onClick={() => onNavigateToTab('input')}
@@ -73,7 +73,7 @@ export const ProblemsTab = ({
       {/* Action Control Bar */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Danh Sách 10 Bài Toán Thực Tế</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Danh Sách {problems.length} Bài Toán Thực Tế</h2>
           <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
             {problems.length} câu
           </span>
