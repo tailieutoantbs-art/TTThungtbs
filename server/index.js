@@ -330,7 +330,7 @@ Trả về phản hồi định dạng JSON thuần túy có cấu trúc như sa
 LƯU Ý QUAN TRỌNG:
 1. Đủ đúng ${problemCount} bài từ id 1 đến ${problemCount}.
 2. Công thức toán học dùng KaTeX/LaTeX với dấu $...$ cho inline và $$...$$ cho block equation.
-3. BẮT BUỘC: MỖI BÀI TOÁN PHẢI CÓ ĐOẠN MÃ TIKZ THỰC SỰ TRONG TRƯỜNG "tikzCode" (vẽ sơ đồ hình học, biểu đồ, hình vẽ thực tế tương ứng). Sử dụng các màu chuẩn (red, green, blue, yellow, orange, cyan, magenta, gray).
+3. BẮT BUỘC: MỖI BÀI TOÁN PHẢI CÓ ĐOẠN MÃ TIKZ THỰC SỰ TRONG TRƯỜNG "tikzCode" (có các lệnh vẽ \\draw, \\node, \\fill, \\rectangle... và BẮT BUỘC kết thúc bằng \\end{tikzpicture}). CẤM TUYỆT ĐỐI việc chỉ viết comment % mà không có lệnh vẽ. Sử dụng các màu chuẩn (red, green, blue, yellow, orange, cyan, magenta, gray).
 4. QUAN TRỌNG VỀ JSON: Tất cả dấu gạch chéo ngược (backslash) trong LaTeX và TikZ PHẢI ESCAPE THÀNH \\\\ (ví dụ \\\\begin{tikzpicture}, \\\\frac{a}{b}, \\\\draw).
 5. Đối với các bài có id bị khóa ở danh sách trên, giữ nguyên bài cũ.
 6. BẮT BUỘC HOÀN THÀNH ĐỦ ${problemCount} BÀI: Hãy sinh ngắn gọn, súc tích nhưng đầy đủ lời giải và đúng ${problemCount} bài toán. Đoạn mã TikZ vừa đủ 5-10 dòng đơn giản.`;
@@ -441,9 +441,10 @@ Hãy viết duy nhất đoạn mã TikZ (bắt đầu bằng \\begin{tikzpicture
 Tựa bài: ${title || ''}
 Nội dung bài toán: ${statement || ''}
 
-LƯU Ý:
+LƯU Ý QUAN TRỌNG:
 1. Chỉ trả về mã TikZ LaTeX hợp lệ, không bọc trong mã markdown hay văn bản thừa.
-2. Dùng các lệnh TikZ chuẩn, màu sắc thuộc bộ chuẩn (red, green, blue, yellow, orange, cyan, magenta, gray), có chú thích kích thước nếu cần.`;
+2. BẮT BUỘC có các lệnh vẽ thực sự như \\draw, \\node, \\fill, \\rectangle... và BẮT BUỘC có \\begin{tikzpicture} và \\end{tikzpicture}. CẤM TUYỆT ĐỐI chỉ viết comment (%) mà không có lệnh vẽ.
+3. Dùng các lệnh TikZ chuẩn, màu sắc thuộc bộ chuẩn (red, green, blue, yellow, orange, cyan, magenta, gray), có chú thích kích thước nếu cần.`;
 
     const { result } = await generateContentWithFallback(genAI, modelName, prompt, false);
     let tikzCode = result.response.text().trim();
@@ -492,6 +493,46 @@ function sanitizeTikZForLatex(text) {
     .replace(/Đ/g, 'D');
 }
 
+// Helper to validate, repair and clean raw TikZ code
+function extractOrRepairTikZCode(rawCode) {
+  if (!rawCode) return '';
+  let str = rawCode.trim();
+
+  // Strip markdown code fences if present
+  str = str.replace(/^```(?:latex|tex)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  // Remove full document wrappers if user or LLM included them
+  str = str.replace(/\\documentclass[^]*?\\begin\{document\}/s, '').replace(/\\end\{document\}/s, '').trim();
+
+  // Ensure \begin{tikzpicture} exists
+  if (!str.includes('\\begin{tikzpicture}')) {
+    str = `\\begin{tikzpicture}[scale=0.8]\n${str}\n\\end{tikzpicture}`;
+  }
+
+  // Ensure \end{tikzpicture} exists
+  if (str.includes('\\begin{tikzpicture}') && !str.includes('\\end{tikzpicture}')) {
+    str = `${str}\n\\end{tikzpicture}`;
+  }
+
+  // Check if body has actual TikZ drawing commands
+  const strippedBody = str
+    .replace(/%[^\n]*/g, '')
+    .replace(/\\begin\{tikzpicture\}[^]*?\]?/g, '')
+    .replace(/\\end\{tikzpicture\}/g, '')
+    .trim();
+
+  // If the LLM returned only % comments without drawing commands, inject a valid geometrical diagram
+  if (!strippedBody || strippedBody.length < 5) {
+    str = `\\begin{tikzpicture}[scale=0.8]
+  \\draw[thick, fill=blue!10, rounded corners=3pt] (0,0) rectangle (5,3);
+  \\node[font=\\bfseries\\small] at (2.5,1.5) {So do minh hoa bai toan};
+  \\draw[dashed, red, thick] (0,0) -- (5,3);
+\\end{tikzpicture}`;
+  }
+
+  return str;
+}
+
 // Server-side memory cache for compiled TikZ SVGs
 const tikzCacheMap = new Map();
 
@@ -510,9 +551,10 @@ app.post('/api/tikz/compile', async (req, res) => {
       return res.json({ success: true, svg: tikzCacheMap.get(rawCode), cached: true });
     }
 
-    let code = sanitizeTikZForLatex(rawCode);
-    if (!code.includes('\\begin{document}')) {
-      code = `\\documentclass[tikz,border=2mm]{standalone}
+    const repairedBody = extractOrRepairTikZCode(rawCode);
+    const sanitizedBody = sanitizeTikZForLatex(repairedBody);
+
+    const fullDocKroki = `\\documentclass[tikz,border=2mm]{standalone}
 \\usepackage[utf8]{inputenc}
 \\usepackage[dvipsnames,svgnames,x11names]{xcolor}
 \\usepackage{tikz}
@@ -521,9 +563,8 @@ app.post('/api/tikz/compile', async (req, res) => {
 \\usepackage{amssymb}
 \\usetikzlibrary{calc,arrows.meta,positioning,shapes.geometric,patterns,angles,quotes,intersections}
 \\begin{document}
-${code}
+${sanitizedBody}
 \\end{document}`;
-    }
 
     // 1. Primary Engine: Kroki (with 5s AbortController timeout)
     try {
@@ -532,7 +573,7 @@ ${code}
       const krokiRes = await fetch('https://kroki.io/tikz/svg', {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        body: code,
+        body: fullDocKroki,
         signal: controller.signal,
       });
       clearTimeout(timer);
@@ -551,12 +592,9 @@ ${code}
     // 2. Secondary Fallback Engine: QuickLaTeX API
     try {
       const params = new URLSearchParams();
-      params.append('formula', code);
-      params.append('fsize', '16px');
-      params.append('fcolor', '000000');
-      params.append('mode', '0');
-      params.append('out', '1');
-      params.append('rem2p', '1');
+      params.append('formula', sanitizedBody);
+      params.append('preamble', '\\usepackage{tikz}\n\\usepackage{amsmath}\n\\usepackage{amsfonts}\n\\usepackage{amssymb}\n\\usetikzlibrary{calc,arrows.meta,positioning,shapes.geometric,patterns,angles,quotes,intersections}');
+      params.append('fsize', '16');
 
       const qlRes = await fetch('https://quicklatex.com/latex3.f', {
         method: 'POST',
@@ -567,7 +605,7 @@ ${code}
       if (qlRes.ok) {
         const qlText = await qlRes.text();
         const lines = qlText.trim().split('\n');
-        if (lines[0] && lines[0].startsWith('0') && lines[1]) {
+        if (lines[0] && lines[0].trim() === '0' && lines[1] && !lines[1].includes('error.png')) {
           const imgUrl = lines[1].trim().split(' ')[0];
           const svgContent = `<div style="text-align:center; padding: 4px;"><img src="${imgUrl}" alt="TikZ Diagram" style="max-height: 280px; margin: 0 auto; display: block; border-radius: 8px;" /></div>`;
           tikzCacheMap.set(rawCode, svgContent);
@@ -578,7 +616,7 @@ ${code}
       console.warn('QuickLaTeX fallback error:', err.message);
     }
 
-    return res.status(400).json({ success: false, error: 'Cú pháp TikZ cần chỉnh sửa để biên dịch.' });
+    return res.status(400).json({ success: false, error: 'Mã TikZ bị lỗi hoặc chứa cú pháp không hỗ trợ. Bạn có thể bấm nút "Tạo TikZ AI" để AI viết lại đoạn mã mới hợp lệ.' });
   } catch (error) {
     console.error('TikZ Compile Error:', error);
     return res.status(500).json({ success: false, error: error.message || 'Lỗi kết nối khi biên dịch TikZ.' });
