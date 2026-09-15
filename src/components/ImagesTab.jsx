@@ -243,8 +243,6 @@ export const ImagesTab = ({
     }
   };
 
-  const [imageSeedState, setImageSeedState] = useState({});
-
   const cleanPromptForPollinations = (rawPrompt) => {
     if (!rawPrompt) return 'Educational math geometry diagram realistic';
     return rawPrompt
@@ -258,6 +256,18 @@ export const ImagesTab = ({
   const handleRetryImage = (pId) => {
     setImageErrorState((prev) => ({ ...prev, [pId]: false }));
     setImageSeedState((prev) => ({ ...prev, [pId]: Date.now() }));
+  };
+
+  const handleImageError = (pId, currentEngine) => {
+    if (currentEngine === 'pollinations') {
+      setSelectedEngines((prev) => ({ ...prev, [pId]: 'unsplash' }));
+      setImageErrorState((prev) => ({ ...prev, [pId]: false }));
+    } else if (currentEngine === 'unsplash') {
+      setSelectedEngines((prev) => ({ ...prev, [pId]: 'diagram' }));
+      setImageErrorState((prev) => ({ ...prev, [pId]: false }));
+    } else {
+      setImageErrorState((prev) => ({ ...prev, [pId]: true }));
+    }
   };
 
   return (
@@ -297,7 +307,7 @@ export const ImagesTab = ({
 
           let imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=400&nologo=true&seed=${seed}`;
           if (engine === 'unsplash') {
-            imageUrl = `https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&h=400&q=80&sig=${seed}`;
+            imageUrl = UNSPLASH_STEM_PHOTOS[idx % UNSPLASH_STEM_PHOTOS.length];
           } else if (engine === 'diagram') {
             imageUrl = `https://loremflickr.com/600/400/math,geometry,diagram?lock=${seed}`;
           }
@@ -440,7 +450,7 @@ export const ImagesTab = ({
                         alt={`Minh họa câu ${idx + 1}`}
                         className="w-full h-full object-cover transition-opacity duration-300"
                         loading="lazy"
-                        onError={() => setImageErrorState((prev) => ({ ...prev, [p.id]: true }))}
+                        onError={() => handleImageError(p.id, engine)}
                       />
                     ) : (
                       <div className="p-4 text-center space-y-2">

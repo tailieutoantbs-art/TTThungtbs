@@ -492,7 +492,10 @@ function sanitizeTikZForLatex(text) {
     .replace(/Đ/g, 'D');
 }
 
-// 8. TikZ Compiler Endpoint (Kroki Engine)
+// Server-side memory cache for compiled TikZ SVGs
+const tikzCacheMap = new Map();
+
+// 8. TikZ Compiler Endpoint (Kroki + QuickLaTeX Dual Engine with Caching)
 app.post('/api/tikz/compile', async (req, res) => {
   try {
     const { tikzCode } = req.body;
@@ -500,7 +503,14 @@ app.post('/api/tikz/compile', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Thiếu mã TikZ.' });
     }
 
-    let code = sanitizeTikZForLatex(tikzCode.trim());
+    const rawCode = tikzCode.trim();
+
+    // 0. Return cached SVG if compiled previously (0ms response)
+    if (tikzCacheMap.has(rawCode)) {
+      return res.json({ success: true, svg: tikzCacheMap.get(rawCode), cached: true });
+    }
+
+    let code = sanitizeTikZForLatex(rawCode);
     if (!code.includes('\\begin{document}')) {
       code = `\\documentclass[tikz,border=2mm]{standalone}
 \\usepackage[utf8]{inputenc}
@@ -509,25 +519,63 @@ app.post('/api/tikz/compile', async (req, res) => {
 \\usepackage{amsmath}
 \\usepackage{amsfonts}
 \\usepackage{amssymb}
+\\usetikzlibrary{calc,arrows.meta,positioning,shapes.geometric,patterns,angles,quotes,intersections}
 \\begin{document}
 ${code}
 \\end{document}`;
     }
 
-    const krokiRes = await fetch('https://kroki.io/tikz/svg', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      body: code,
-    });
+    // 1. Primary Engine: Kroki (with 5s AbortController timeout)
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const krokiRes = await fetch('https://kroki.io/tikz/svg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        body: code,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
 
-    if (krokiRes.ok) {
-      const svgText = await krokiRes.text();
-      if (svgText.includes('<svg') && !svgText.includes('Error 400')) {
-        return res.json({ success: true, svg: svgText });
+      if (krokiRes.ok) {
+        const svgText = await krokiRes.text();
+        if (svgText.includes('<svg') && !svgText.includes('Error 400')) {
+          tikzCacheMap.set(rawCode, svgText);
+          return res.json({ success: true, svg: svgText, engine: 'kroki' });
+        }
       }
-      console.warn('Kroki compilation error:', svgText.substring(0, 300));
-    } else {
-      console.warn('Kroki HTTP status error:', krokiRes.status);
+    } catch (err) {
+      console.warn('Kroki engine retry fallback:', err.message);
+    }
+
+    // 2. Secondary Fallback Engine: QuickLaTeX API
+    try {
+      const params = new URLSearchParams();
+      params.append('formula', code);
+      params.append('fsize', '16px');
+      params.append('fcolor', '000000');
+      params.append('mode', '0');
+      params.append('out', '1');
+      params.append('rem2p', '1');
+
+      const qlRes = await fetch('https://quicklatex.com/latex3.f', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+
+      if (qlRes.ok) {
+        const qlText = await qlRes.text();
+        const lines = qlText.trim().split('\n');
+        if (lines[0] && lines[0].startsWith('0') && lines[1]) {
+          const imgUrl = lines[1].trim().split(' ')[0];
+          const svgContent = `<div style="text-align:center; padding: 4px;"><img src="${imgUrl}" alt="TikZ Diagram" style="max-height: 280px; margin: 0 auto; display: block; border-radius: 8px;" /></div>`;
+          tikzCacheMap.set(rawCode, svgContent);
+          return res.json({ success: true, svg: svgContent, engine: 'quicklatex' });
+        }
+      }
+    } catch (err) {
+      console.warn('QuickLaTeX fallback error:', err.message);
     }
 
     return res.status(400).json({ success: false, error: 'Cú pháp TikZ cần chỉnh sửa để biên dịch.' });
