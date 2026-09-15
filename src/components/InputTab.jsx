@@ -507,7 +507,7 @@ export const InputTab = ({
                 <Sparkles className="w-6 h-6 text-amber-300" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-white">Đang Khởi Tạo 10 Bài Toán Thực Tế 4.0</h3>
+                <h3 className="font-bold text-base text-white">Đang Khởi Tạo {options.problemCount || 10} Bài Toán Thực Tế 4.0</h3>
                 <p className="text-xs text-blue-200">{progressStep || 'Đang xử lý dữ liệu AI...'}</p>
               </div>
             </div>

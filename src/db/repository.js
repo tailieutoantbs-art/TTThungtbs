@@ -17,7 +17,7 @@ export async function saveProblemSetToRepo(data) {
     sourceProblemText: sourceProblemText || '',
     options: options || {},
     problems: problems || [],
-    tags: tags.length > 0 ? tags : ['#BaiToanThucTe', `#${grade.replace(/\s+/g, '')}`],
+    tags: tags.length > 0 ? tags : ['#BaiToanThucTe', `#${(grade || options?.grade || '').replace(/\s+/g, '')}`],
     createdAt: new Date().toISOString(),
   });
   return newId;

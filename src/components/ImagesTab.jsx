@@ -98,12 +98,21 @@ const TikZCompiledViewer = ({ tikzCode, title, onZoom }) => {
   );
 };
 
+const UNSPLASH_STEM_PHOTOS = [
+  'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=600&q=80',
+];
+
 export const ImagesTab = ({
   problems,
   apiKey,
   selectedImageModel,
   onUpdateProblem,
   onLoadSample10,
+  onShowToast,
 }) => {
   const [copiedId, setCopiedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -112,6 +121,13 @@ export const ImagesTab = ({
   const [loadingAiId, setLoadingAiId] = useState(null);
   const [zoomMedia, setZoomMedia] = useState(null); // { type: 'svg' | 'image', content: '', title: '' }
   const [imageErrorState, setImageErrorState] = useState({});
+  const [customInstructions, setCustomInstructions] = useState({});
+  const [imageSeedState, setImageSeedState] = useState({});
+  const [selectedEngines, setSelectedEngines] = useState({});
+
+  const notify = (type, msg, title) => {
+    if (onShowToast) onShowToast(type, msg, title);
+  };
 
   if (!problems || problems.length === 0) {
     return (
