@@ -9,6 +9,7 @@ import { SolutionsTab } from './components/SolutionsTab';
 import { ExportTab } from './components/ExportTab';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { UserGuideModal } from './components/UserGuideModal';
+import { ToastNotification } from './components/ToastNotification';
 import { INITIAL_OPTIONS, SAMPLE_PROBLEMS, SAMPLE_10_PROBLEMS } from './utils/sampleData';
 import { getAllProblemSets, saveProblemSetToRepo } from './db/repository';
 import { exportWordDocument } from './utils/wordExport';
@@ -19,6 +20,15 @@ export default function App() {
   const [analysis, setAnalysis] = useState(null);
   const [problems, setProblems] = useState(SAMPLE_10_PROBLEMS);
   const [activeTab, setActiveTab] = useState('input');
+
+  // Toast Notification State
+  const [toast, setToast] = useState(null);
+
+  const showToast = (type, message, title = '') => {
+    setToast({ type, message, title, autoClose: type === 'success' });
+  };
+
+  const closeToast = () => setToast(null);
 
   // API Key & Model State
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || sessionStorage.getItem('gemini_api_key') || '');
@@ -131,7 +141,7 @@ export default function App() {
   // Analyze Source Problem
   const handleAnalyzeProblem = async () => {
     if (!sourceProblemText.trim()) {
-      alert('Vui lòng nhập đề bài gốc.');
+      showToast('error', 'Vui lòng nhập đề bài gốc.', 'Thiếu Đề Bài');
       return;
     }
 
@@ -151,12 +161,12 @@ export default function App() {
       const data = await res.json();
       if (data.success && data.analysis) {
         setAnalysis(data.analysis);
-        alert('Phân tích đề bài gốc thành công!');
+        showToast('success', 'Phân tích đề bài gốc thành công!');
       } else {
-        alert(data.error || 'Lỗi khi phân tích đề bài.');
+        showToast('error', data.error || 'Lỗi khi phân tích đề bài.', 'Phân Tích Thất Bại');
       }
     } catch {
-      alert('Lỗi kết nối khi gọi AI phân tích bài toán.');
+      showToast('error', 'Lỗi kết nối khi gọi AI phân tích bài toán.', 'Lỗi Kết Nối');
     } finally {
       setIsAnalyzing(false);
     }
@@ -165,13 +175,13 @@ export default function App() {
   // Generate 10 Problems
   const handleGenerate10 = async () => {
     if (!sourceProblemText.trim()) {
-      alert('Vui lòng nhập hoặc nạp một đề bài toán gốc.');
+      showToast('error', 'Vui lòng nhập hoặc nạp một đề bài toán gốc.', 'Thiếu Đề Bài');
       return;
     }
 
     if (!apiKey.trim()) {
       setIsApiKeyModalOpen(true);
-      alert('Chưa cài đặt Gemini API Key! Vui lòng nhập API Key (lấy miễn phí từ Google AI Studio) để khởi tạo 10 bài toán mới.');
+      showToast('error', 'Chưa cài đặt Gemini API Key! Vui lòng nhập API Key để khởi tạo bài toán mới.', 'Thiếu API Key');
       return;
     }
 
@@ -224,15 +234,16 @@ export default function App() {
           setProgressPercent(100);
           setProgressStep('Hoàn tất tạo 10 bài toán thực tế!');
           setActiveTab('problems');
+          showToast('success', `Đã tạo thành công ${data.data.problems.length} bài toán thực tế!`);
         } else {
-          alert('Dữ liệu AI trả về chưa đúng cấu trúc 10 bài toán.');
+          showToast('error', 'Dữ liệu AI trả về chưa đúng cấu trúc bài toán.', 'Lỗi Cấu Trúc');
         }
       } else {
-        alert(data.error || 'Lỗi khi khởi tạo 10 bài toán từ Gemini API.');
+        showToast('error', data.error || 'Lỗi khi khởi tạo bài toán từ Gemini API.', 'Lỗi Tạo Bài');
       }
     } catch (err) {
       clearInterval(interval);
-      alert('Lỗi kết nối khi gọi Gemini API: ' + (err.message || err));
+      showToast('error', 'Lỗi kết nối khi gọi Gemini API: ' + (err.message || err), 'Lỗi Kết Nối');
     } finally {
       setIsGenerating(false);
     }
@@ -260,12 +271,12 @@ export default function App() {
         setProblems((prev) =>
           prev.map((item) => (item.id === id ? { ...data.problem, id, isLocked: false } : item))
         );
-        alert(`Đã khởi tạo thành công bài toán mới cho Câu ${id}!`);
+        showToast('success', `Đã khởi tạo thành công bài toán mới cho Câu ${id}!`);
       } else {
-        alert(data.error || `Không thể tạo lại Câu ${id}.`);
+        showToast('error', data.error || `Không thể tạo lại Câu ${id}.`, 'Lỗi Tạo Bài');
       }
     } catch {
-      alert(`Lỗi kết nối khi tạo lại Câu ${id}.`);
+      showToast('error', `Lỗi kết nối khi tạo lại Câu ${id}.`, 'Lỗi Kết Nối');
     } finally {
       setIsGenerating(false);
     }
@@ -289,19 +300,20 @@ export default function App() {
       setSourceProblemText('');
       setAnalysis(null);
       setProblems([]);
+      showToast('success', 'Đã xóa dữ liệu đề bài!');
     }
   };
 
   const handleSaveDraft = () => {
     const draft = { sourceProblemText, options, analysis, problems };
     localStorage.setItem('math_assistant_draft', JSON.stringify(draft));
-    alert('Đã lưu bản nháp thành công vào trình duyệt!');
+    showToast('success', 'Đã lưu bản nháp thành công vào trình duyệt!');
   };
 
   const handleRestoreDraft = () => {
     const draftStr = localStorage.getItem('math_assistant_draft');
     if (!draftStr) {
-      alert('Không tìm thấy bản nháp nào trước đó.');
+      showToast('error', 'Không tìm thấy bản nháp nào trước đó.', 'Không Có Dữ Liệu');
       return;
     }
     try {
@@ -310,9 +322,9 @@ export default function App() {
       if (draft.options) setOptions(draft.options);
       if (draft.analysis) setAnalysis(draft.analysis);
       if (draft.problems) setProblems(draft.problems);
-      alert('Khôi phục bản nháp thành công!');
+      showToast('success', 'Khôi phục bản nháp thành công!');
     } catch {
-      alert('Lỗi đọc bản nháp.');
+      showToast('error', 'Lỗi đọc bản nháp.', 'Lỗi Dữ Liệu');
     }
   };
 
@@ -322,6 +334,7 @@ export default function App() {
     if (item.options) setOptions(item.options);
     if (item.problems) setProblems(item.problems);
     setActiveTab('problems');
+    showToast('success', `Đã nạp bộ đề "${item.title || ''}"!`);
   };
 
   // Repository Save with Custom Title ("Lưu Với Tên")
@@ -343,7 +356,7 @@ export default function App() {
       problems,
       tags: ['#ToanThucTe', `#${options.grade.replace(/\s+/g, '')}`],
     });
-    alert(`Đã lưu bộ đề "${finalTitle}" vào Kho Ngân Hàng Bài Toán thành công!`);
+    showToast('success', `Đã lưu bộ đề "${finalTitle}" vào Kho Ngân Hàng thành công!`);
     updateRepoCount();
   };
 
@@ -394,6 +407,7 @@ export default function App() {
             onRestoreDraft={handleRestoreDraft}
             onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
             apiKey={apiKey}
+            onShowToast={showToast}
           />
         )}
 
@@ -416,8 +430,10 @@ export default function App() {
               a.href = url;
               a.download = '10_bai_toan_thuc_te.json';
               a.click();
+              showToast('success', 'Đã xuất file JSON thành công!');
             }}
             isGenerating={isGenerating}
+            onShowToast={showToast}
           />
         )}
 
@@ -427,6 +443,7 @@ export default function App() {
             currentOptions={options}
             sourceProblemText={sourceProblemText}
             onLoadProblemSet={handleLoadProblemSet}
+            onShowToast={showToast}
           />
         )}
 
@@ -437,6 +454,7 @@ export default function App() {
             selectedImageModel={selectedModel}
             onUpdateProblem={handleUpdateProblem}
             onLoadSample10={() => setProblems(SAMPLE_10_PROBLEMS)}
+            onShowToast={showToast}
           />
         )}
 
@@ -446,6 +464,7 @@ export default function App() {
             showAnswers={showAnswers}
             onToggleShowAnswers={() => setShowAnswers(!showAnswers)}
             onNavigateToTab={setActiveTab}
+            onShowToast={showToast}
           />
         )}
 
@@ -456,7 +475,9 @@ export default function App() {
             onImportJson={(importedProblems) => {
               setProblems(importedProblems);
               setActiveTab('problems');
+              showToast('success', 'Nhập dữ liệu bài toán từ file JSON thành công!');
             }}
+            onShowToast={showToast}
           />
         )}
       </main>
@@ -467,7 +488,7 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Modals */}
+      {/* Modals & Toast Notifications */}
       <ApiKeyModal
         isOpen={isApiKeyModalOpen}
         apiKey={apiKey}
@@ -482,6 +503,9 @@ export default function App() {
       />
 
       <UserGuideModal isOpen={isUserGuideOpen} onClose={() => setIsUserGuideOpen(false)} />
+
+      {/* Custom Toast Notification System */}
+      <ToastNotification toast={toast} onClose={closeToast} />
     </div>
   );
 }

@@ -136,16 +136,19 @@ export const ImagesTab = ({
   const handleCopyTikZ = (code, id) => {
     navigator.clipboard.writeText(code);
     setCopiedId(`tikz_${id}`);
+    notify('success', `Đã sao chép mã TikZ của Câu ${id}!`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleCopyPrompt = (prompt, id) => {
-    navigator.clipboard.writeText(prompt);
+  const handleCopyPrompt = (promptText, id) => {
+    navigator.clipboard.writeText(promptText);
     setCopiedId(`prompt_${id}`);
+    notify('success', `Đã sao chép Prompt ảnh AI của Câu ${id}!`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleDownloadAllTikZ = () => {
+    if (!problems || problems.length === 0) return;
     const allCode = problems
       .map((p, idx) => `% --- Câu ${idx + 1}: ${p.title} ---\n${p.tikzCode || '% Không có mã TikZ'}\n`)
       .join('\n\n');
@@ -156,6 +159,7 @@ export const ImagesTab = ({
     a.href = url;
     a.download = `Ma_TikZ_Full_10_Bai_Toan.tex`;
     a.click();
+    notify('success', 'Đã tải xuống file tổng hợp mã TikZ (.tex) thành công!');
   };
 
   const startEdit = (p) => {
@@ -171,11 +175,12 @@ export const ImagesTab = ({
       imagePrompt: editedPrompt,
     });
     setEditingId(null);
+    notify('success', `Đã cập nhật mã TikZ & Prompt ảnh cho Câu ${p.id}!`);
   };
 
   const handleRegenerateTikZAi = async (p) => {
     if (!apiKey) {
-      alert('Vui lòng cài đặt Gemini API Key trước khi sử dụng AI.');
+      notify('error', 'Vui lòng cài đặt Gemini API Key trước khi sử dụng AI.', 'Thiếu API Key');
       return;
     }
     setLoadingAiId(`tikz_${p.id}`);
@@ -194,23 +199,20 @@ export const ImagesTab = ({
       const data = await res.json();
       if (data.success && data.tikzCode) {
         onUpdateProblem({ ...p, tikzCode: data.tikzCode });
-        alert(`Đã biên dịch lại thành công mã TikZ mới cho Câu ${p.id}!`);
+        notify('success', `Đã biên dịch lại thành công mã TikZ mới cho Câu ${p.id}!`);
       } else {
-        alert(data.error || 'Không thể tạo lại mã TikZ.');
+        notify('error', data.error || 'Không thể tạo lại mã TikZ.', 'Lỗi Tạo TikZ');
       }
     } catch {
-      alert('Lỗi kết nối khi gọi Gemini API tạo TikZ.');
+      notify('error', 'Lỗi kết nối khi gọi Gemini API tạo TikZ.', 'Lỗi Kết Nối');
     } finally {
       setLoadingAiId(null);
     }
   };
 
-  const [customInstructions, setCustomInstructions] = useState({});
-  const [selectedEngines, setSelectedEngines] = useState({});
-
   const handleRegeneratePromptAi = async (p) => {
     if (!apiKey) {
-      alert('Vui lòng cài đặt Gemini API Key trước khi sử dụng AI.');
+      notify('error', 'Vui lòng cài đặt Gemini API Key trước khi sử dụng AI.', 'Thiếu API Key');
       return;
     }
     setLoadingAiId(`prompt_${p.id}`);
@@ -232,12 +234,12 @@ export const ImagesTab = ({
         onUpdateProblem({ ...p, imagePrompt: data.imagePrompt });
         setImageErrorState((prev) => ({ ...prev, [p.id]: false }));
         setImageSeedState((prev) => ({ ...prev, [p.id]: Date.now() }));
-        alert(`Đã khởi tạo thành công Prompt ảnh AI mới cho Câu ${p.id}!`);
+        notify('success', `Đã khởi tạo thành công Prompt ảnh AI mới cho Câu ${p.id}!`);
       } else {
-        alert(data.error || 'Không thể tạo lại Prompt ảnh.');
+        notify('error', data.error || 'Không thể tạo lại Prompt ảnh.', 'Lỗi AI Prompt');
       }
     } catch {
-      alert('Lỗi kết nối khi gọi Gemini API tạo Prompt ảnh.');
+      notify('error', 'Lỗi kết nối khi gọi Gemini API tạo Prompt ảnh.', 'Lỗi Kết Nối');
     } finally {
       setLoadingAiId(null);
     }

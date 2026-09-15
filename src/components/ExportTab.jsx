@@ -3,15 +3,19 @@ import { exportWordDocument } from '../utils/wordExport';
 import { exportPowerPointSlides } from '../utils/pptxExport';
 import { Download, FileText, Presentation, FileCode, Upload, Layers, Check, Sparkles, HardDrive, ExternalLink } from 'lucide-react';
 
-export const ExportTab = ({ problems, options, onImportJson }) => {
+export const ExportTab = ({ problems, options, onImportJson, onShowToast }) => {
   const [isExporting, setIsExporting] = useState(false);
+
+  const notify = (type, msg, title) => {
+    if (onShowToast) onShowToast(type, msg, title);
+  };
 
   const handleExportSingleWord = async () => {
     setIsExporting(true);
     try {
-      await exportWordDocument(problems, options, false);
+      await exportWordDocument(problems, options, false, onShowToast);
     } catch (e) {
-      alert('Lỗi xuất file Word: ' + e.message);
+      notify('error', 'Lỗi xuất file Word: ' + e.message, 'Lỗi Xuất File');
     } finally {
       setIsExporting(false);
     }
@@ -20,9 +24,9 @@ export const ExportTab = ({ problems, options, onImportJson }) => {
   const handleExport4VariantsWord = async () => {
     setIsExporting(true);
     try {
-      await exportWordDocument(problems, options, true);
+      await exportWordDocument(problems, options, true, onShowToast);
     } catch (e) {
-      alert('Lỗi xuất file Word 4 mã đề: ' + e.message);
+      notify('error', 'Lỗi xuất file Word 4 mã đề: ' + e.message, 'Lỗi Xuất File');
     } finally {
       setIsExporting(false);
     }
@@ -30,9 +34,9 @@ export const ExportTab = ({ problems, options, onImportJson }) => {
 
   const handleExportPPTX = () => {
     try {
-      exportPowerPointSlides(problems, options);
+      exportPowerPointSlides(problems, options, onShowToast);
     } catch (e) {
-      alert('Lỗi xuất PowerPoint: ' + e.message);
+      notify('error', 'Lỗi xuất PowerPoint: ' + e.message, 'Lỗi Xuất Slide');
     }
   };
 
@@ -46,15 +50,15 @@ export const ExportTab = ({ problems, options, onImportJson }) => {
         const data = JSON.parse(event.target.result);
         if (Array.isArray(data)) {
           onImportJson(data);
-          alert('Nhập dữ liệu 10 bài toán từ file JSON thành công!');
+          notify('success', 'Nhập dữ liệu bài toán từ file JSON thành công!');
         } else if (data.problems && Array.isArray(data.problems)) {
           onImportJson(data.problems);
-          alert('Nhập dữ liệu 10 bài toán từ file JSON thành công!');
+          notify('success', 'Nhập dữ liệu bài toán từ file JSON thành công!');
         } else {
-          alert('File JSON không đúng cấu trúc bộ 10 bài toán.');
+          notify('error', 'File JSON không đúng cấu trúc bộ bài toán.', 'File Không Hợp Lệ');
         }
       } catch {
-        alert('Không thể đọc dữ liệu từ file JSON.');
+        notify('error', 'Không thể đọc dữ liệu từ file JSON.', 'Lỗi Đọc File');
       }
     };
     reader.readAsText(file);

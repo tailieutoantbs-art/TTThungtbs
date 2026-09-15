@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { getAllProblemSets, searchProblemSets, deleteProblemSet, saveProblemSetToRepo } from '../db/repository';
 import { Database, Search, Trash2, RotateCcw, Tag, Calendar, Layers, Download, Upload, PlusCircle, Check, HardDrive, ExternalLink, Save } from 'lucide-react';
 
-export const RepositoryTab = ({ currentProblems, currentOptions, sourceProblemText, onLoadProblemSet }) => {
+export const RepositoryTab = ({ currentProblems, currentOptions, sourceProblemText, onLoadProblemSet, onShowToast }) => {
   const [repoList, setRepoList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [saveTitle, setSaveTitle] = useState('');
-  const [saveTags, setSaveTags] = useState('#ToanThucTe, #Lop9');
+  const [saveTags, setSaveTags] = useState('GDPT2018, ToánThựcTế');
   const [isSaving, setIsSaving] = useState(false);
-  const [activeSetDetail, setActiveSetDetail] = useState(null);
+
+  const notify = (type, msg, title) => {
+    if (onShowToast) onShowToast(type, msg, title);
+  };
 
   useEffect(() => {
     loadRepository();
@@ -27,7 +30,7 @@ export const RepositoryTab = ({ currentProblems, currentOptions, sourceProblemTe
 
   const handleSaveCurrentSet = async () => {
     if (!currentProblems || currentProblems.length === 0) {
-      alert('Chưa có 10 bài toán nào để lưu vào kho ngân hàng đề.');
+      notify('error', 'Chưa có bài toán nào để lưu vào kho ngân hàng đề.', 'Chưa Có Bài Toán');
       return;
     }
 
@@ -49,11 +52,11 @@ export const RepositoryTab = ({ currentProblems, currentOptions, sourceProblemTe
         tags: tagsArr,
       });
 
-      alert('Đã lưu bộ 10 bài toán vào Kho Ngân Hàng Bài Toán thành công!');
+      notify('success', 'Đã lưu bộ bài toán vào Kho Ngân Hàng thành công!');
       setSaveTitle('');
       loadRepository();
     } catch {
-      alert('Không thể lưu vào kho bài toán.');
+      notify('error', 'Không thể lưu vào kho bài toán.', 'Lỗi Lưu Kho');
     } finally {
       setIsSaving(false);
     }

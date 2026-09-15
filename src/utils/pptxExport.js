@@ -1,8 +1,8 @@
 import pptxgen from 'pptxgenjs';
 
-export function exportPowerPointSlides(problems, options = {}) {
+export function exportPowerPointSlides(problems, options = {}, onShowToast) {
   if (!problems || problems.length === 0) {
-    alert('Không có dữ liệu bài toán để xuất PowerPoint.');
+    if (onShowToast) onShowToast('error', 'Không có dữ liệu bài toán để xuất PowerPoint.', 'Chưa Có Dữ Liệu');
     return;
   }
 

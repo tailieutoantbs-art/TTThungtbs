@@ -37,9 +37,14 @@ export const InputTab = ({
   onRestoreDraft,
   onOpenApiKeyModal,
   apiKey,
+  onShowToast,
 }) => {
   const [selectedSampleId, setSelectedSampleId] = useState('');
   const [isOcrLoading, setIsOcrLoading] = useState(false);
+
+  const notify = (type, msg, title) => {
+    if (onShowToast) onShowToast(type, msg, title);
+  };
 
   const handleSelectSample = (e) => {
     const id = e.target.value;
@@ -79,15 +84,15 @@ export const InputTab = ({
         const data = await res.json();
         if (data.success && data.extractedText) {
           onChangeSourceText(data.extractedText);
-          alert('Trích xuất văn bản từ ảnh/tài liệu thành công!');
+          notify('success', 'Trích xuất văn bản từ ảnh/tài liệu thành công!');
         } else {
-          alert(data.error || 'Không thể trích xuất văn bản từ ảnh.');
+          notify('error', data.error || 'Không thể trích xuất văn bản từ ảnh.', 'Lỗi Trích Xuất OCR');
         }
         setIsOcrLoading(false);
       };
       reader.readAsDataURL(file);
     } catch {
-      alert('Lỗi đọc file ảnh/tài liệu.');
+      notify('error', 'Lỗi đọc file ảnh/tài liệu.', 'Lỗi Đọc File');
       setIsOcrLoading(false);
     }
   };
@@ -105,7 +110,7 @@ export const InputTab = ({
         if (!blob) continue;
 
         if (!apiKey) {
-          alert('Chưa cài đặt Gemini API Key. Vui lòng cài đặt API Key để trích xuất đề từ ảnh dán.');
+          notify('error', 'Chưa cài đặt Gemini API Key. Vui lòng cài đặt API Key để trích xuất đề từ ảnh dán.', 'Thiếu API Key');
           return;
         }
 
@@ -127,15 +132,15 @@ export const InputTab = ({
             const data = await res.json();
             if (data.success && data.extractedText) {
               onChangeSourceText(data.extractedText);
-              alert('Đã trích xuất thành công đề bài từ ảnh chụp dán trực tiếp (Ctrl + V)!');
+              notify('success', 'Đã trích xuất thành công đề bài từ ảnh chụp dán trực tiếp (Ctrl + V)!');
             } else {
-              alert(data.error || 'Không thể trích xuất nội dung từ ảnh dán.');
+              notify('error', data.error || 'Không thể trích xuất nội dung từ ảnh dán.', 'Lỗi OCR Clipboard');
             }
             setIsOcrLoading(false);
           };
           reader.readAsDataURL(blob);
         } catch {
-          alert('Lỗi đọc dữ liệu ảnh từ clipboard.');
+          notify('error', 'Lỗi đọc dữ liệu ảnh từ clipboard.', 'Lỗi Clipboard');
           setIsOcrLoading(false);
         }
         break;

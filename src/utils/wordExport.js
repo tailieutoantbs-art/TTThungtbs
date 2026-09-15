@@ -21,9 +21,9 @@ function cleanLaTeX(text) {
     .replace(/\\degree/g, '°');
 }
 
-export async function exportWordDocument(problems, options = {}, isMultipleVariants = false) {
+export async function exportWordDocument(problems, options = {}, isMultipleVariants = false, onShowToast) {
   if (!problems || problems.length === 0) {
-    alert('Không có dữ liệu bài toán để xuất file Word.');
+    if (onShowToast) onShowToast('error', 'Không có dữ liệu bài toán để xuất file Word.', 'Chưa Có Dữ Liệu');
     return;
   }
 
