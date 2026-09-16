@@ -275,21 +275,45 @@ app.post('/api/gemini/generate-10', async (req, res) => {
   try {
     const { problemText, options, analysis, apiKey, model: modelName = 'gemini-2.5-flash', lockedProblems = [] } = req.body;
     const genAI = getGenAI(apiKey);
-    const problemCount = parseInt(options?.problemCount, 10) || 10;
+    const problemCount = Math.max(1, Math.min(10, parseInt(options?.problemCount, 10) || 10));
 
     const lockedMap = (lockedProblems || []).reduce((acc, p) => {
       acc[p.id] = p;
       return acc;
     }, {});
 
+    // Build dynamic JSON array schema hint so Gemini does not truncate array to 1 element
+    const sampleItems = [];
+    for (let i = 1; i <= Math.min(problemCount, 2); i++) {
+      sampleItems.push(`    {
+      "id": ${i},
+      "title": "Tên ngắn gọn bài toán ${i} (không ghi chữ Câu ${i}:)",
+      "questionFormat": "Trắc nghiệm nhiều lựa chọn / Tự luận",
+      "contextTag": "Bối cảnh thực tế bài ${i}",
+      "difficulty": "Mức độ bài ${i}",
+      "statement": "Nội dung đề bài chi tiết bài toán ${i}...",
+      "options": ["A. Phương án A", "B. Phương án B", "C. Phương án C", "D. Phương án D"],
+      "correctOption": "A",
+      "shortAnswer": "Đáp số ngắn gọn bài ${i}",
+      "detailedSolution": "Lời giải từng bước chi tiết bài ${i}...",
+      "imagePrompt": "English prompt describing real world educational illustration scene ${i}...",
+      "tikzCode": "\\\\begin{tikzpicture}[scale=0.8]\\n  \\\\draw[thick, fill=blue!10] (0,0) rectangle (4,3);\\n  \\\\node at (2,1.5) {Hình ${i}};\\n\\\\end{tikzpicture}"
+    }`);
+    }
+
+    let schemaItemsString = sampleItems.join(',\n');
+    if (problemCount > 2) {
+      schemaItemsString += `,\n    /* ... BẮT BUỘC TIẾP TỤC TẠO CÁC BÀI TƯƠNG TỰ ĐẾN ĐỦ ID: ${problemCount} ... */`;
+    }
+
     const prompt = `Bạn là Chuyên gia Biên soạn Đề thi Toán & Khoa học GDPT 2018. 
-Nhiệm vụ của bạn là dựa vào đề bài toán gốc và các thông tin phân tích để sáng tạo đúng ${problemCount} BÀI TOÁN THỰC TẾ TƯƠNG TỰ.
+Nhiệm vụ BẮT BUỘC của bạn là dựa vào đề bài toán gốc và các thông tin phân tích để sáng tạo ĐÚNG CHÍNH XÁC ${problemCount} BÀI TOÁN THỰC TẾ TƯƠNG TỰ (mảng "problems" phải chứa đúng ${problemCount} object từ id = 1 đến id = ${problemCount}).
 
 --- ĐỀ BÀI GỐC ---
 ${problemText}
 
 --- CẤU HÌNH YÊU CẦU ---
-- Số lượng bài toán cần tạo: Đúng ${problemCount} bài (từ id 1 đến ${problemCount})
+- SỐ LƯỢNG BÀI TOÁN CẦN TẠO: CHÍNH XÁC ${problemCount} BÀI (từ id 1 đến ${problemCount}).
 - Lớp: ${options?.grade || 'GDPT'}
 - Phân môn: ${options?.domain || 'Toán học'}
 - Mức độ độ khó: ${options?.difficulty || 'Theo bài gốc'}
@@ -302,7 +326,7 @@ ${problemText}
 ${Object.keys(lockedMap).length > 0 ? JSON.stringify(Object.keys(lockedMap)) : 'Không có bài nào bị khóa.'}
 
 YÊU CẦU ĐẦU RA:
-Trả về phản hồi định dạng JSON thuần túy có cấu trúc như sau:
+Trả về phản hồi định dạng JSON thuần túy có cấu trúc mảng "problems" chứa ĐỦ ĐÚNG ${problemCount} BÀI TOÁN như sau:
 {
   "sourceAnalysis": {
     "topic": "${analysis?.topic || 'Bài toán thực tế'}",
@@ -310,30 +334,17 @@ Trả về phản hồi định dạng JSON thuần túy có cấu trúc như sa
     "grade": "${analysis?.grade || options?.grade || 'Lớp 9'}"
   },
   "problems": [
-    {
-      "id": 1,
-      "title": "Tên ngắn gọn bài toán (không ghi chữ Câu 1:)",
-      "questionFormat": "Trắc nghiệm nhiều lựa chọn",
-      "contextTag": "Bối cảnh thực tế (Giao thông / STEM / Nông nghiệp...)",
-      "difficulty": "Mức độ (Nhận biết / Thông hiểu / Vận dụng...)",
-      "statement": "Nội dung đề bài chi tiết...",
-      "options": ["A. Phương án A", "B. Phương án B", "C. Phương án C", "D. Phương án D"],
-      "correctOption": "A",
-      "shortAnswer": "Đáp số ngắn gọn",
-      "detailedSolution": "Lời giải từng bước chi tiết...",
-      "imagePrompt": "English prompt describing real world educational illustration scene...",
-      "tikzCode": "\\\\begin{tikzpicture}[scale=0.8]\\n  \\\\draw[thick, fill=blue!10] (0,0) rectangle (4,3);\\n  \\\\node at (2,1.5) {Hình minh họa};\\n\\\\end{tikzpicture}"
-    }
+${schemaItemsString}
   ]
 }
 
 LƯU Ý QUAN TRỌNG:
-1. Đủ đúng ${problemCount} bài từ id 1 đến ${problemCount}.
+1. BẮT BUỘC MẢNG "problems" PHẢI CÓ ĐỦ ĐÚNG ${problemCount} BÀI TOÁN TỪ ID 1 ĐẾN ID ${problemCount}. CẤM TUYỆT ĐỐI VIỆC CHỈ TẠO 1 BÀI HOẶC TẠO THIẾU SỐ LƯỢNG ${problemCount} BÀI.
 2. Công thức toán học dùng KaTeX/LaTeX với dấu $...$ cho inline và $$...$$ cho block equation.
 3. BẮT BUỘC: MỖI BÀI TOÁN PHẢI CÓ ĐOẠN MÃ TIKZ THỰC SỰ TRONG TRƯỜNG "tikzCode" (có các lệnh vẽ \\draw, \\node, \\fill, \\rectangle... và BẮT BUỘC kết thúc bằng \\end{tikzpicture}). CẤM TUYỆT ĐỐI việc chỉ viết comment % mà không có lệnh vẽ. Sử dụng các màu chuẩn (red, green, blue, yellow, orange, cyan, magenta, gray).
 4. QUAN TRỌNG VỀ JSON: Tất cả dấu gạch chéo ngược (backslash) trong LaTeX và TikZ PHẢI ESCAPE THÀNH \\\\ (ví dụ \\\\begin{tikzpicture}, \\\\frac{a}{b}, \\\\draw).
 5. Đối với các bài có id bị khóa ở danh sách trên, giữ nguyên bài cũ.
-6. BẮT BUỘC HOÀN THÀNH ĐỦ ${problemCount} BÀI: Hãy sinh ngắn gọn, súc tích nhưng đầy đủ lời giải và đúng ${problemCount} bài toán. Đoạn mã TikZ vừa đủ 5-10 dòng đơn giản.`;
+6. Hãy sinh ngắn gọn, súc tích nhưng đầy đủ lời giải và đúng ${problemCount} bài toán. Đoạn mã TikZ vừa đủ 5-10 dòng đơn giản để tránh tràn bộ nhớ token.`;
 
     const { result } = await generateContentWithFallback(genAI, modelName, prompt, true);
     const data = safeParseLlmJson(result.response.text());
@@ -346,6 +357,18 @@ LƯU Ý QUAN TRỌNG:
     }
 
     if (data.problems && Array.isArray(data.problems)) {
+      // Ensure all requested IDs from 1 to problemCount are present if AI omitted any
+      const existingIds = new Set(data.problems.map((p) => p.id));
+      for (let i = 1; i <= problemCount; i++) {
+        if (!existingIds.has(i)) {
+          if (lockedMap[i]) {
+            data.problems.push({ ...lockedMap[i], isLocked: true });
+          }
+        }
+      }
+
+      data.problems.sort((a, b) => a.id - b.id);
+
       data.problems = data.problems.map((p) => {
         if (lockedMap[p.id]) {
           return { ...lockedMap[p.id], isLocked: true };
@@ -356,7 +379,7 @@ LƯU Ý QUAN TRỌNG:
 
     return res.json({ success: true, data });
   } catch (error) {
-    console.error('Generate 10 Error:', error);
+    console.error('Generate N Error:', error);
     return res.status(500).json({ success: false, error: error.message || 'Lỗi khi tạo danh sách bài toán tương tự.' });
   }
 });

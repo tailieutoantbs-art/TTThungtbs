@@ -187,11 +187,12 @@ export default function App() {
 
     setIsGenerating(true);
 
+    const countToGenerate = options.problemCount || 10;
     const steps = [
       { step: '1. Đang kết nối tới Gemini API...', pct: 10 },
       { step: '2. Đang phân tích kiến thức bài gốc...', pct: 20 },
       { step: '3. Đang xây dựng ngữ cảnh thực tế...', pct: 40 },
-      { step: '4. Đang sáng tạo 10 bài toán tương tự...', pct: 60 },
+      { step: `4. Đang sáng tạo ${countToGenerate} bài toán tương tự...`, pct: 60 },
       { step: '5. Đang tạo mã TikZ & prompt minh họa...', pct: 80 },
       { step: '6. Đang kiểm tra và hoàn thiện...', pct: 95 },
     ];
@@ -232,7 +233,7 @@ export default function App() {
         if (data.data.problems && Array.isArray(data.data.problems) && data.data.problems.length > 0) {
           setProblems(data.data.problems);
           setProgressPercent(100);
-          setProgressStep('Hoàn tất tạo 10 bài toán thực tế!');
+          setProgressStep(`Hoàn tất tạo ${data.data.problems.length} bài toán thực tế!`);
           setActiveTab('problems');
           showToast('success', `Đã tạo thành công ${data.data.problems.length} bài toán thực tế!`);
         } else {
